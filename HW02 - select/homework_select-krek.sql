@@ -73,7 +73,7 @@ select
 from Sales.Customers c
 join Sales.Orders o on c.CustomerID = o.CustomerID
 join Sales.OrderLines ol on ol.OrderID = o.OrderID 
-where ol.UnitPrice > 100 or ol.Quantity > 20 and o.PickingCompletedWhen is not null
+where ol.UnitPrice > 100 or (ol.Quantity > 20 and o.PickingCompletedWhen is not null)
 group by o.OrderID, o.OrderDate, c.CustomerName
 order by OrderQuarter, PartYear, o.OrderDate
 offset 1000 rows
@@ -98,9 +98,10 @@ fetch next 100 rows only
 select po.PurchaseOrderID,dm.DeliveryMethodName, po.ExpectedDeliveryDate,s.SupplierName,p.FullName
 from Purchasing.PurchaseOrders po 
 join Purchasing.Suppliers s on s.SupplierID = po.SupplierID
-join Application.DeliveryMethods dm on dm.DeliveryMethodID = po.DeliveryMethodID and dm.DeliveryMethodName in ('Air Freight','Refrigerated Air Freight')
+join Application.DeliveryMethods dm on dm.DeliveryMethodID = po.DeliveryMethodID 
 join Application.People p on p.PersonID = po.ContactPersonID
 where po.IsOrderFinalized = 1 and po.ExpectedDeliveryDate between '20130101' and '20230131'
+and dm.DeliveryMethodName in ('Air Freight','Refrigerated Air Freight')
 ;
 
 /*
@@ -109,7 +110,7 @@ where po.IsOrderFinalized = 1 and po.ExpectedDeliveryDate between '20130101' and
 Сделать без подзапросов.
 */
 ;
-  select top (10) o.OrderDate, p.FullName, c.CustomerName
+  select top (10) with ties o.OrderDate, p.FullName, c.CustomerName
   from Sales.Orders o
   join Application.People p on p.PersonID = o.SalespersonPersonID
   join Sales.Customers c on c.CustomerID = o.CustomerID
@@ -128,6 +129,7 @@ select c.CustomerID, c.CustomerName, c.PhoneNumber
 from Sales.Customers c
 join Sales.Orders o on c.CustomerID = o.CustomerID
 join Sales.OrderLines ol on o.OrderID = ol.OrderID
-join Warehouse.StockItems si on si.StockItemID = ol.StockItemID and si.StockItemName = 'Chocolate frogs 250g'
+join Warehouse.StockItems si on si.StockItemID = ol.StockItemID
+where si.StockItemName = 'Chocolate frogs 250g'
 group by c.CustomerID, c.CustomerName, c.PhoneNumber
 ;
