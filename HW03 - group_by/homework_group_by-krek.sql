@@ -31,12 +31,12 @@ USE WideWorldImporters
 */
 ;
 select 
- year(i.InvoiceDate)			 [year]
-,month(i.InvoiceDate)			 [month]
-,avg(UnitPrice)					 [avg]
-,sum(UnitPrice * ol.Quantity)	 [sum] 
+ year(i.InvoiceDate)				 [year]
+,month(i.InvoiceDate)				 [month]
+,avg(il.UnitPrice)					 [avg]
+,sum(il.UnitPrice * il.Quantity)	 [sum] 
 from Sales.Invoices i
-join Sales.OrderLines ol on i.OrderID = ol.OrderID
+join Sales.InvoiceLines il on i.InvoiceID = il.InvoiceID
 group by year(i.InvoiceDate) ,month(i.InvoiceDate) 
 order by year(i.InvoiceDate) ,month(i.InvoiceDate) 
 ;
@@ -54,11 +54,11 @@ order by year(i.InvoiceDate) ,month(i.InvoiceDate)
 select
  year(i.InvoiceDate)				[year]
 ,month(i.InvoiceDate)				[month]
-,sum(ol.UnitPrice * ol.Quantity)	[sum] 
+,sum(il.UnitPrice * il.Quantity)	[sum] 
 from Sales.Invoices i
-join Sales.OrderLines ol on i.OrderID = ol.OrderID
+join Sales.InvoiceLines il on i.InvoiceID = il.InvoiceID
 group by year(i.InvoiceDate) ,month(i.InvoiceDate) 
-having sum(ol.UnitPrice * ol.Quantity) > 4600000
+having sum(il.UnitPrice * il.Quantity) > 4600000
 order by year(i.InvoiceDate) ,month(i.InvoiceDate) 
 ;
 /*
@@ -79,17 +79,16 @@ order by year(i.InvoiceDate) ,month(i.InvoiceDate)
 */
 
 select 
- year(o.OrderDate)						[year]
-,month(o.OrderDate)						[month]
-,ol.[Description]						[name]				
-,sum(ol.UnitPrice * ol.Quantity)		[sum] 
+ year(i.InvoiceDate)						[year]
+,month(i.InvoiceDate)						[month]
+,il.[Description]						[name]				
+,sum(il.UnitPrice * il.Quantity)		[sum] 
 ,min(i.InvoiceDate)						[min_dt]
-,sum(ol.Quantity)						[qnt]
+,sum(il.Quantity)						[qnt]
 from Sales.Invoices i
-join Sales.Orders o on i.OrderID = o.OrderID
-join Sales.OrderLines ol on ol.OrderID = i.OrderID
-group by year(o.OrderDate), month(o.OrderDate), ol.[Description]
-having sum(ol.Quantity) < 50
+join Sales.InvoiceLines il on il.InvoiceID = i.InvoiceID
+group by year(i.InvoiceDate), month(i.InvoiceDate), il.[Description]
+having sum(il.Quantity) < 50
 
 -- ---------------------------------------------------------------------------
 -- Опционально
