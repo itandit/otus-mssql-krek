@@ -140,10 +140,12 @@ where rn = 1
 ;
 select c.CustomerId, c.CustomerName, StockItemID, UnitPrice, InvoiceDate 
 from (
-select distinct CustomerId, StockItemID, InvoiceDate, UnitPrice, rank() over(partition by CustomerId order by UnitPrice desc) rn
+select CustomerId, StockItemID, InvoiceDate, UnitPrice, dense_rank() over(partition by CustomerId order by UnitPrice desc) rn
 from sales.Invoices si
 join sales.InvoiceLines sil on si.InvoiceID = sil.InvoiceID
 ) a
 join sales.Customers c on c.CustomerID = a.CustomerID
-where rn <=2
+where rn <=2 
+order by c.CustomerId, UnitPrice desc, InvoiceDate 
+
 
