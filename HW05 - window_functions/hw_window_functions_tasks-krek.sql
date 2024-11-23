@@ -46,10 +46,9 @@ join Sales.Customers c on i.CustomerID = c.CustomerID
 where i.InvoiceDate >= '20150101'
 group by i.InvoiceID, c.CustomerName, i.InvoiceDate
 )
-select tmp.InvoiceID, tmp.CustomerName, tmp.InvoiceDate, tmp.InvoiceSum, sum(cum.InvoiceSum) MonthCum
-from tmp
-left join tmp cum on cum.InvoiceDate <= eomonth(tmp.InvoiceDate)
-group by tmp.InvoiceID, tmp.CustomerName, tmp.InvoiceDate, tmp.InvoiceSum
+select InvoiceID, CustomerName, InvoiceDate, InvoiceSum
+,(select sum(tmp.InvoiceSum) from tmp where tmp.InvoiceDate <= eomonth(cum.InvoiceDate)) MonthCum
+from tmp cum
 
 /*
 2. Сделайте расчет суммы нарастающим итогом в предыдущем запросе с помощью оконной функции.
@@ -57,18 +56,17 @@ group by tmp.InvoiceID, tmp.CustomerName, tmp.InvoiceDate, tmp.InvoiceSum
 */
 set statistics time, io on
 
-
-select tt.InvoiceID, tt.CustomerName, tt.InvoiceDate, tt.InvoiceSum, 
-sum(tt.InvoiceSum) over (partition by eomonth(tt.InvoiceDate)) MonthCum
-from (
+with tmp as (
 select i.InvoiceID, c.CustomerName, i.InvoiceDate, sum(il.UnitPrice * il.Quantity)  InvoiceSum
 from Sales.Invoices i 
 join Sales.InvoiceLines il on i.InvoiceID = il.InvoiceID
 join Sales.Customers c on i.CustomerID = c.CustomerID 
 where i.InvoiceDate >= '20150101'
 group by i.InvoiceID, c.CustomerName, i.InvoiceDate
-) tt
-
+)
+select InvoiceID, CustomerName, InvoiceDate, InvoiceSum
+,sum(InvoiceSum) over (order by eomonth(InvoiceDate)) MonthCum
+from tmp
 
 /*
 3. Вывести список 2х самых популярных продуктов (по количеству проданных) 
@@ -142,7 +140,7 @@ where rn = 1
 ;
 select c.CustomerId, c.CustomerName, StockItemID, UnitPrice, InvoiceDate 
 from (
-select CustomerId, StockItemID, InvoiceDate, UnitPrice, rank() over(partition by CustomerId order by UnitPrice desc) rn
+select distinct CustomerId, StockItemID, InvoiceDate, UnitPrice, rank() over(partition by CustomerId order by UnitPrice desc) rn
 from sales.Invoices si
 join sales.InvoiceLines sil on si.InvoiceID = sil.InvoiceID
 ) a
