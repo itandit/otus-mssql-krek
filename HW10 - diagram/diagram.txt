@@ -1,0 +1,55 @@
+https://app.quickdatabasediagrams.com
+
+Customers
+-
+id PK int 
+name nvarchar(100) 
+address nvarchar(255)
+phone nvarchar(20)
+
+Employees
+--
+id PK int 
+name nvarchar(100) 
+position nvarchar(100) 
+salary decimal(10,2) 
+
+Medicines
+---
+id PK int 
+name nvarchar(100) 
+type_id int FK >- MedicineTypes.id
+supplier_id int FK >- Suppliers.id
+price decimal(10,2) 
+quantity int 
+
+MedicineTypes
+-----
+id PK int 
+name nvarchar(100) 
+
+Prescriptions
+---
+id PK int 
+customer_id int FK >- Customers.id
+medicine_id int FK >- Medicines.id
+employee_id int FK >- Employees.id
+date date 
+quantity int
+
+Sales
+---
+id PK int 
+customer_id int FK >- Customers.id
+medicine_id int FK >- Medicines.id
+employee_id int FK >- Employees.id
+date date 
+quantity int
+price decimal(10,2) 
+
+Suppliers
+--
+id PK int 
+name nvarchar(100) 
+addressn nvarchar(255) 
+phone nvarchar(20) 
