@@ -6,7 +6,6 @@ SET STATISTICS IO ON
 SET STATISTICS time ON 
 
 --------базовый запрос---------
-
 Select ord.CustomerID, det.StockItemID, SUM(det.UnitPrice), SUM(det.Quantity), COUNT(ord.OrderID)    
 FROM Sales.Orders AS ord
     JOIN Sales.OrderLines AS det
@@ -30,37 +29,66 @@ WHERE Inv.BillToCustomerID != ord.CustomerID
 GROUP BY ord.CustomerID, det.StockItemID
 ORDER BY ord.CustomerID, det.StockItemID
 
+---------запрос написанный иначе----
 
 
----------запрос с хинтами----
+SELECT 
+    ord.CustomerID, 
+    det.StockItemID, 
+    SUM(det.UnitPrice) AS TotalUnitPrice, 
+    SUM(det.Quantity) AS TotalQuantity, 
+    COUNT(ord.OrderID) AS OrderCount
+FROM 
+    Sales.Orders AS ord
+JOIN 
+    Sales.OrderLines AS det ON det.OrderID = ord.OrderID
+JOIN 
+    Sales.Invoices AS Inv ON Inv.OrderID = ord.OrderID
+JOIN 
+    Sales.CustomerTransactions AS Trans ON Trans.InvoiceID = Inv.InvoiceID
+JOIN 
+    Warehouse.StockItemTransactions AS ItemTrans ON ItemTrans.StockItemID = det.StockItemID
+JOIN 
+    Warehouse.StockItems AS It ON It.StockItemID = det.StockItemID
+WHERE 
+    Inv.BillToCustomerID != ord.CustomerID
+    AND It.SupplierId = 12
+    AND DATEDIFF(DAY, Inv.InvoiceDate, ord.OrderDate) = 0
+GROUP BY 
+    ord.CustomerID, 
+    det.StockItemID
+HAVING 
+    SUM(det.UnitPrice * det.Quantity) > 250000
+ORDER BY 
+    ord.CustomerID, 
+    det.StockItemID;
 
-WITH SupplierStockItems AS (
-    SELECT StockItemID
-    FROM Warehouse.StockItems
-    WHERE SupplierId = 12
-),
-CustomerTotalSpent AS (
-    SELECT ordTotal.CustomerID, SUM(Total.UnitPrice * Total.Quantity) AS TotalSpent
-    FROM Sales.OrderLines AS Total
-    JOIN Sales.Orders AS ordTotal ON ordTotal.OrderID = Total.OrderID
-    GROUP BY ordTotal.CustomerID
-    HAVING SUM(Total.UnitPrice * Total.Quantity) > 250000
-)
-SELECT ord.CustomerID, 
-       det.StockItemID, 
+---------запрос написанный иначе----
+
+SELECT ord.CustomerID, det.StockItemID, 
        SUM(det.UnitPrice) AS TotalUnitPrice, 
        SUM(det.Quantity) AS TotalQuantity, 
-       COUNT(ord.OrderID) AS OrderCount
+       COUNT(DISTINCT ord.OrderID) AS OrderCount
 FROM Sales.Orders AS ord
 JOIN Sales.OrderLines AS det ON det.OrderID = ord.OrderID
 JOIN Sales.Invoices AS Inv ON Inv.OrderID = ord.OrderID
 JOIN Sales.CustomerTransactions AS Trans ON Trans.InvoiceID = Inv.InvoiceID
 JOIN Warehouse.StockItemTransactions AS ItemTrans ON ItemTrans.StockItemID = det.StockItemID
-JOIN SupplierStockItems AS ssi ON ssi.StockItemID = det.StockItemID
-JOIN CustomerTotalSpent AS cts ON cts.CustomerID = Inv.CustomerID
+JOIN (
+SELECT StockItemID
+FROM Warehouse.StockItems
+WHERE SupplierID = 12
+) AS si ON si.StockItemID = det.StockItemID
+JOIN (
+SELECT ordTotal.CustomerID
+FROM Sales.OrderLines AS Total
+JOIN Sales.Orders AS ordTotal ON ordTotal.OrderID = Total.OrderID
+GROUP BY ordTotal.CustomerID
+HAVING SUM(Total.UnitPrice * Total.Quantity) > 250000
+) AS cs ON cs.CustomerID = Inv.CustomerID
 WHERE Inv.BillToCustomerID != ord.CustomerID
-  AND DATEDIFF(dd, Inv.InvoiceDate, ord.OrderDate) = 0
+  AND Inv.InvoiceDate = ord.OrderDate
 GROUP BY ord.CustomerID, det.StockItemID
-ORDER BY ord.CustomerID, det.StockItemID
-OPTION (RECOMPILE, HASH GROUP, MERGE JOIN, FORCE ORDER, MAXDOP 1);
+ORDER BY ord.CustomerID, det.StockItemID;
+
 
