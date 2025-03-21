@@ -11,7 +11,7 @@ GO
 drop function if exists [fnSaleDatePartition]
 
 CREATE PARTITION FUNCTION [fnSalesDatePartition](DATE) AS RANGE right FOR VALUES
-('20230101','20240101','20250101');																																																									
+('20220101','20230101','20240101');																																																									
 GO
 
 
